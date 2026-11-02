@@ -41,15 +41,21 @@ function actionButton(label: string, onclick: () => void, primary = false): HTML
 
 // --- Bank
 
+class BankLoadError extends Error {}
+
 const banks = new Map<LevelId, Promise<Bank>>();
 
 function loadBank(level: LevelId): Promise<Bank> {
   let bank = banks.get(level);
   if (!bank) {
-    bank = fetch(`${import.meta.env.BASE_URL}bank/${level}.json`).then((response) => {
-      if (!response.ok) throw new Error(`Could not load ${level} puzzles`);
-      return response.json() as Promise<Bank>;
-    });
+    bank = fetch(`${import.meta.env.BASE_URL}bank/${level}.json`)
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json() as Promise<Bank>;
+      })
+      .catch((error: unknown) => {
+        throw new BankLoadError(`Could not load ${level} puzzles: ${String(error)}`);
+      });
     bank.catch(() => banks.delete(level));
     banks.set(level, bank);
   }
@@ -457,10 +463,10 @@ async function route(): Promise<void> {
   if (dialog.open) dialog.close();
 
   const hash = location.hash.slice(1);
-  if (hash === "") return renderHome(token);
-  if (hash === "history") return renderHistory();
 
   try {
+    if (hash === "") return await renderHome(token);
+    if (hash === "history") return renderHistory();
     if (hash === "today") {
       const today = await todaysPuzzle();
       if (token === renderToken) location.replace(`#${formatPuzzleId(today)}`);
@@ -474,8 +480,10 @@ async function route(): Promise<void> {
       return;
     }
     renderPuzzle(hash, ref, decodePuzzle(encoded));
-  } catch {
-    if (token === renderToken) showBankError();
+  } catch (error) {
+    if (token !== renderToken) return;
+    if (error instanceof BankLoadError) showBankError();
+    else showError(`Something went wrong opening this page. ${String(error)}`);
   }
 }
 
