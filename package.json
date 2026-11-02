@@ -1,0 +1,33 @@
+{
+  "name": "fifty5",
+  "version": "1.0.0",
+  "private": true,
+  "description": "New puzzles to solve on a physical IQ Puzzler Pro set. Unofficial fan project.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "generate": "node scripts/generate.ts",
+    "test": "vitest run",
+    "test:core": "vitest run tests/core.test.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dylan-harmsen/puzzler-pro-generator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dylan-harmsen/puzzler-pro-generator/issues"
+  },
+  "homepage": "https://github.com/dylan-harmsen/puzzler-pro-generator#readme",
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.1.0"
+  }
+}
