@@ -15,6 +15,38 @@
   <body>
     <main id="app"></main>
     <dialog id="dialog"></dialog>
+    <script>
+      // Shows a message instead of a blank page if the app can't start. This is separate
+      // from the app and in older syntax, so it still runs when the app can't load or parse.
+      (function () {
+        function report(detail) {
+          var app = document.getElementById("app");
+          if (!app || app.childNodes.length > 0) return;
+          var title = document.createElement("h1");
+          title.textContent = "fifty5";
+          var message = document.createElement("p");
+          message.textContent = "The site couldn't start. Try reloading the page. If that doesn't help, this shows what went wrong:";
+          var details = document.createElement("p");
+          details.className = "small";
+          details.textContent = detail + " | " + navigator.userAgent;
+          app.appendChild(title);
+          app.appendChild(message);
+          app.appendChild(details);
+        }
+        addEventListener("error", function (event) {
+          var target = event.target;
+          report(event.message || "Couldn't load " + ((target && (target.src || target.href)) || "a file"));
+        }, true);
+        addEventListener("unhandledrejection", function (event) {
+          report(String(event.reason));
+        });
+        addEventListener("load", function () {
+          setTimeout(function () {
+            report("The page was still empty 5 seconds after loading");
+          }, 5000);
+        });
+      })();
+    </script>
     <script type="module" src="/src/app/main.ts"></script>
   </body>
 </html>

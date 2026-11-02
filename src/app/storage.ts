@@ -1,4 +1,4 @@
-import type { PieceId } from "../core/pieces.ts";
+import { PIECE_BY_ID, type PieceId } from "../core/pieces.ts";
 import type { Solve } from "../core/progress.ts";
 import { NEW_TIMER, type TimerState } from "../core/timer.ts";
 
@@ -13,12 +13,12 @@ const SESSIONS_KEY = "fifty5:sessions";
 const LAST_KEY = "fifty5:last";
 
 // Storage can throw or come back empty in a private window, so nothing here may fail.
-function read<T>(key: string, fallback: T): T {
+function read(key: string): unknown {
   try {
     const raw = localStorage.getItem(key);
-    return raw === null ? fallback : (JSON.parse(raw) as T);
+    return raw === null ? null : JSON.parse(raw);
   } catch {
-    return fallback;
+    return null;
   }
 }
 
@@ -30,20 +30,56 @@ function write(key: string, value: unknown): void {
   }
 }
 
+// Saved data is outside the code's control, so it's checked rather than trusted.
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isSolve(value: unknown): value is Solve {
+  return (
+    isRecord(value) &&
+    typeof value.puzzleId === "string" &&
+    typeof value.date === "string" &&
+    typeof value.hints === "number" &&
+    (value.timeMs === null || typeof value.timeMs === "number")
+  );
+}
+
+function isTimer(value: unknown): value is TimerState {
+  return (
+    isRecord(value) &&
+    typeof value.elapsedMs === "number" &&
+    (value.runningSince === null || typeof value.runningSince === "number")
+  );
+}
+
+function isSession(value: unknown): value is Session {
+  return (
+    isRecord(value) &&
+    Array.isArray(value.hints) &&
+    value.hints.every((hint) => PIECE_BY_ID.has(hint)) &&
+    isTimer(value.timer) &&
+    typeof value.revealed === "boolean"
+  );
+}
+
 export function loadSolves(): Solve[] {
-  return read<Solve[]>(SOLVES_KEY, []);
+  const solves = read(SOLVES_KEY);
+  return Array.isArray(solves) ? solves.filter(isSolve) : [];
 }
 
 export function addSolve(solve: Solve): void {
   write(SOLVES_KEY, [...loadSolves(), solve]);
 }
 
-function loadSessions(): Record<string, Session> {
-  return read<Record<string, Session>>(SESSIONS_KEY, {});
+function loadSessions(): Record<string, unknown> {
+  const sessions = read(SESSIONS_KEY);
+  return isRecord(sessions) ? sessions : {};
 }
 
 export function loadSession(puzzleId: string): Session {
-  return loadSessions()[puzzleId] ?? { hints: [], timer: NEW_TIMER, revealed: false };
+  const session = loadSessions()[puzzleId];
+  return isSession(session) ? session : { hints: [], timer: NEW_TIMER, revealed: false };
 }
 
 export function saveSession(puzzleId: string, session: Session): void {
@@ -59,6 +95,6 @@ export function clearSession(puzzleId: string): void {
 }
 
 export function lastPuzzleId(): string | null {
-  const id = read<string | null>(LAST_KEY, null);
-  return id !== null && loadSessions()[id] ? id : null;
+  const id = read(LAST_KEY);
+  return typeof id === "string" && isSession(loadSessions()[id]) ? id : null;
 }
