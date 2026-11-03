@@ -11,6 +11,7 @@ import {
   countSolutions,
   decodePuzzle,
   encodePuzzle,
+  hasGiveawayGap,
   placementOf,
   remainingPieces,
   type Puzzle,
@@ -117,6 +118,18 @@ describe("puzzles", () => {
   it("list the pieces left to place", () => {
     expect(remainingPieces(puzzle)).toHaveLength(10);
     expect(remainingPieces(puzzle)).not.toContain("P");
+  });
+
+  it("spot a piece walled off in a gap of its own shape", () => {
+    const leaving = (...left: string[]): Puzzle => ({
+      solution: REFERENCE,
+      given: PIECES.map((p) => p.id).filter((id) => !left.includes(id)),
+    });
+    expect(hasGiveawayGap(RECTANGLE, puzzle)).toBe(false);
+    // Navy and red touch, so they share one gap that either could start.
+    expect(hasGiveawayGap(RECTANGLE, leaving("N", "R"))).toBe(false);
+    // Pink touches neither, so it is alone in its gap.
+    expect(hasGiveawayGap(RECTANGLE, leaving("N", "R", "P"))).toBe(true);
   });
 
   it("share a canonical form with their rotated and mirrored copies", () => {

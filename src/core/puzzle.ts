@@ -55,6 +55,16 @@ export function countSolutions(model: Model, puzzle: Puzzle, limit = 2): number 
   return search(model, puzzle.given.map((piece) => placementOf(model, puzzle.solution, piece)), limit).count;
 }
 
+/** Whether a remaining piece sits walled off in a gap of exactly its own shape, giving it away. */
+export function hasGiveawayGap(board: Board, puzzle: Puzzle): boolean {
+  const given = new Set<string>(puzzle.given);
+  return remainingPieces(puzzle).some((piece) =>
+    cellsOf(puzzle.solution, piece).every((cell) =>
+      board.neighbours[cell].every((next) => puzzle.solution[next] === piece || given.has(puzzle.solution[next])),
+    ),
+  );
+}
+
 export function applySymmetry(board: Board, puzzle: Puzzle, symmetry: number): Puzzle {
   const moved = new Array<string>(puzzle.solution.length);
   board.symmetries[symmetry].forEach((target, cell) => {

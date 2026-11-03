@@ -11,6 +11,7 @@ import {
   canonicalPuzzle,
   decodePuzzle,
   encodePuzzle,
+  hasGiveawayGap,
   placementOf,
   type Puzzle,
 } from "../src/core/puzzle.ts";
@@ -167,6 +168,7 @@ function samplePuzzles(
     const key = encodePuzzle(puzzle);
     if (seen.has(key)) continue;
     seen.add(key);
+    if (hasGiveawayGap(RECTANGLE, puzzle)) continue;
     const ids = puzzle.given.map((piece) => placementOf(model, puzzle.solution, piece));
     const { count, nodes } = search(model, ids, 2);
     if (count === 1) found.push({ puzzle, effort: nodes });
@@ -198,7 +200,7 @@ function allWizardPuzzles(solutions: Int16Array, seen: Set<string>): Puzzle[] {
         if (pairCounts[tuple[i] * size + tuple[j]] !== 1) continue;
         const puzzle = canonicalPuzzle(RECTANGLE, puzzleFrom(tuple, [tuple[i], tuple[j]]));
         const key = encodePuzzle(puzzle);
-        if (!seen.has(key)) {
+        if (!seen.has(key) && !hasGiveawayGap(RECTANGLE, puzzle)) {
           seen.add(key);
           puzzles.push(puzzle);
         }
