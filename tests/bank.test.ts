@@ -3,11 +3,18 @@ import { describe, expect, it } from "vitest";
 import { RECTANGLE } from "../src/core/board.ts";
 import { LEVELS, type Bank } from "../src/core/levels.ts";
 import { PIECES } from "../src/core/pieces.ts";
-import { canonicalPuzzle, countSolutions, decodePuzzle, encodePuzzle, remainingPieces } from "../src/core/puzzle.ts";
+import {
+  canonicalPuzzle,
+  countSolutions,
+  decodePuzzle,
+  encodePuzzle,
+  hasGiveawayGap,
+  remainingPieces,
+} from "../src/core/puzzle.ts";
 import { createModel } from "../src/core/solver.ts";
 
 const model = createModel(RECTANGLE, PIECES);
-const WIZARD_TOTAL = 4425;
+const WIZARD_TOTAL = 4382;
 
 function load(id: string): Bank {
   return JSON.parse(readFileSync(new URL(`../public/bank/${id}.json`, import.meta.url), "utf8")) as Bank;
@@ -38,6 +45,10 @@ describe.each(LEVELS)("$name bank", (level) => {
   it("has no rotated or mirrored duplicates", () => {
     const keys = new Set(all.map((encoded) => encodePuzzle(canonicalPuzzle(RECTANGLE, decodePuzzle(encoded)))));
     expect(keys.size).toBe(all.length);
+  });
+
+  it("has no piece given away by a gap of its own shape", () => {
+    expect(all.filter((encoded) => hasGiveawayGap(RECTANGLE, decodePuzzle(encoded)))).toEqual([]);
   });
 
   it("has exactly one solution for every puzzle", { timeout: 1_800_000 }, () => {
